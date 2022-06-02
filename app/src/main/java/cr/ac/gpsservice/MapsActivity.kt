@@ -9,6 +9,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.*
 
@@ -18,13 +19,18 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.maps.android.PolyUtil
+import com.google.maps.android.data.geojson.GeoJsonLayer
+import com.google.maps.android.data.geojson.GeoJsonPolygon
 import cr.ac.gpsservice.databinding.ActivityMapsBinding
 import cr.ac.gpsservice.db.LocationDatabase
 import cr.ac.gpsservice.entity.Location
 import cr.ac.gpsservice.service.GpsService
+import org.json.JSONObject
 
 private lateinit var mMap: GoogleMap
 private lateinit var locationDatabase: LocationDatabase
+private lateinit var layer : GeoJsonLayer
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -47,13 +53,58 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         validaPermisos()
     }
 
+    fun definePoligono(googleMap: GoogleMap){
+        val geoJsonData= JSONObject("{\n" +
+                "  \"type\": \"FeatureCollection\",\n" +
+                "  \"features\": [\n" +
+                "    {\n" +
+                "      \"type\": \"Feature\",\n" +
+                "      \"properties\": {},\n" +
+                "      \"geometry\": {\n" +
+                "        \"type\": \"Polygon\",\n" +
+                "        \"coordinates\": [\n" +
+                "          [\n" +
+                "            [\n" +
+                "              -87.945556640625,\n" +
+                "              5.4519590315863455\n" +
+                "            ],\n" +
+                "            [\n" +
+                "              -82.518310546875,\n" +
+                "              5.4519590315863455\n" +
+                "            ],\n" +
+                "            [\n" +
+                "              -82.518310546875,\n" +
+                "              11.329253026617318\n" +
+                "            ],\n" +
+                "            [\n" +
+                "              -87.945556640625,\n" +
+                "              11.329253026617318\n" +
+                "            ],\n" +
+                "            [\n" +
+                "              -87.945556640625,\n" +
+                "              5.4519590315863455\n" +
+                "            ]\n" +
+                "          ]\n" +
+                "        ]\n" +
+                "      }\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}\n")
+
+        layer = GeoJsonLayer(googleMap, geoJsonData)
+        layer.addLayerToMap()
+
+    }
+
+
+
+
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-        iniciaServicio()
-
         recuperarPuntos(mMap)
-
+        definePoligono(googleMap)
+        iniciaServicio()
     }
     /**
      * Obtener los puntos almacenados en la bd y mostrarlos en el mapa
@@ -140,13 +191,24 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
          * Coloca en el mapa la localizacion
          * Mueve la camara a esa localizacion
          */
-        override fun onReceive(p0: Context, p1: Intent) {
+        fun getPolygon(layer: GeoJsonLayer): GeoJsonPolygon? {
+            for (feature in layer.features) {
+                return feature.geometry as GeoJsonPolygon
+            }
+            return null
+        }
+        override fun onReceive(context: Context, p1: Intent) {
             if(p1.action==GpsService.GPS){
                 val localizacion:Location=
                     p1.getSerializableExtra("localizacion") as Location
                 val punto=LatLng(localizacion.latitude,localizacion.longitude)
                 mMap.addMarker(MarkerOptions().position(punto).title("Marker in Costa Rica"))
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(punto))
+                if(PolyUtil.containsLocation(localizacion.latitude, localizacion.longitude, getPolygon(layer)!!.outerBoundaryCoordinates, false)==false){
+                    Toast.makeText(context,"El punto está fuera",Toast.LENGTH_SHORT).show()
+                }else{
+                    Toast.makeText(context,"El punto está dentro",Toast.LENGTH_SHORT).show()
+                }
 
             }
         }
