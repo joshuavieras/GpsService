@@ -50,15 +50,20 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-
         iniciaServicio()
-        recuperarPuntos()
+
+        recuperarPuntos(mMap)
 
     }
     /**
      * Obtener los puntos almacenados en la bd y mostrarlos en el mapa
      */
-    fun recuperarPuntos(){
+    fun recuperarPuntos(googleMap:GoogleMap){
+        mMap = googleMap
+        for(location in locationDatabase.locationDao.query()){
+            val costaRica = LatLng(location.latitude, location.longitude)
+            mMap.addMarker(MarkerOptions().position(costaRica).title("Marker in Costa Rica"))
+        }
 
     }
 
@@ -140,7 +145,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 val localizacion:Location=
                     p1.getSerializableExtra("localizacion") as Location
                 val punto=LatLng(localizacion.latitude,localizacion.longitude)
-                mMap.addMarker(MarkerOptions().position(punto).title("maker no se"))
+                mMap.addMarker(MarkerOptions().position(punto).title("Marker in Costa Rica"))
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(punto))
 
             }

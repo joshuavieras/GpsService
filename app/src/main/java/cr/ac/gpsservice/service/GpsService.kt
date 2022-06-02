@@ -32,7 +32,7 @@ class GpsService : IntentService("GpsService") {
     private lateinit var locationDatabase: LocationDatabase
 
     companion object{
-        val GPS="cr.ac.gpsservice.GPS"
+        val GPS= "cr.ac.servicegps.GPS"
     }
 
     override fun onHandleIntent(intent: Intent?) {
@@ -69,7 +69,7 @@ class GpsService : IntentService("GpsService") {
                     val localizacion= Location(null,location.latitude,location.longitude)
                     val bcIntent=Intent()
                     bcIntent.action=GpsService.GPS
-                    bcIntent.putExtra("localizacion", localizacion.toString())
+                    bcIntent.putExtra("localizacion", localizacion)
                     sendBroadcast(bcIntent)
                     locationDatabase.locationDao.insert(Location(null, localizacion.latitude, localizacion.longitude))
                 }
@@ -85,3 +85,4 @@ class GpsService : IntentService("GpsService") {
     }
 
 }
+
